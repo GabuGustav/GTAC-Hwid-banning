@@ -30,17 +30,27 @@ This resource is intentionally minimal and safe to iterate on.
 - `/hwidreload` (level 2)
   - Reloads config and ban data from disk.
 
-## Admin Authorization
-This resource uses trusted admin checks in this order:
-1. `JobsRP.Auth.requireTrustedAdmin` (if available)
-2. fallback to v-admin style checks (`b.admin` + `b.admin.auth`)
+## Admin Authorization (Standalone)
+This resource is fully standalone and does not depend on `jobs_rp`, `v-admin`, or any other admin resource.
 
-If neither path grants trusted admin status, commands are denied.
+Authorization is done only from `config.json`:
+- `commandLevels` controls what level each command needs
+- `admins` is a local list of admin match rules (`name`, `serial`, `guid`, `ip`) with a `level`
+- if any rule matches a player, that player's highest matched `level` is used
+- `allowConsoleBypass` lets server console run all commands
+
+Example admin rule:
+```json
+{
+  "name": "YourAdminNameHere",
+  "level": 2
+}
+```
 
 ## Fingerprint Strategy (Current)
 The resource builds a best-effort fingerprint from available signals:
 - `serial` / `guid` (if exposed)
-- `b.token` (from v-admin)
+- `b.token` (if present from any other system; optional)
 - IP
 - player name
 
@@ -50,7 +60,7 @@ Signals are concatenated into a single fingerprint string and matched exactly.
 - `commandLevels` - required level per command
 - `disconnectMessage` - message shown before disconnect
 - `allowConsoleBypass` - allow server console override
-- `requireTrustedAuth` - require trusted auth checks
+- `admins` - local standalone admin rules and levels
 - `autoBanOnJoinCheck` - enforce checks at join
 - `maxLogEntries` - max entries kept in log file
 
@@ -75,7 +85,7 @@ Use this as a moderation layer, not a sole security boundary.
 ## Setup
 1. Ensure `resources/hwid-banning` is present.
 2. Add/start the resource in `server.xml`.
-3. Ensure your admin framework is active (`jobs_rp` trusted auth or `v-admin`).
+3. Edit `config.json` and set your real admin rule(s) in `admins`.
 4. Use `/hwidwhoami` and `/hwidbanlist` to sanity-check runtime behavior.
 
 ## Recommended Next Improvements

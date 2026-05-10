@@ -14,7 +14,7 @@ let scriptConfig = {
     },
     disconnectMessage: "You are banned from this server (HWID).",
     allowConsoleBypass: true,
-    requireTrustedAuth: true,
+    admins: [],
     autoBanOnJoinCheck: true,
     maxLogEntries: 1000
 };
@@ -94,14 +94,39 @@ function getLevelForCommand(command) {
     return typeof level === "number" ? level : 2;
 }
 
-function getVadminLevel(client) {
+function levelFromAdminRule(client, rule) {
+    try {
+        if (!client || !rule || typeof rule !== "object") return 0;
+        const level = Number(rule.level) || 0;
+        if (level <= 0) return 0;
+
+        const byName = normalize(rule.name);
+        const bySerial = normalize(rule.serial);
+        const byGuid = normalize(rule.guid);
+        const byIp = normalize(rule.ip);
+
+        if (byName && normalize(client.name) === byName) return level;
+        if (bySerial && normalize(client.serial || client.getData("serial")) === bySerial) return level;
+        if (byGuid && normalize(client.guid || client.getData("guid")) === byGuid) return level;
+        if (byIp && normalize(client.ip) === byIp) return level;
+
+        return 0;
+    } catch (_e) {
+        return 0;
+    }
+}
+
+function getConfiguredAdminLevel(client) {
     try {
         if (!client) return 0;
         if (client.console === true) return 99999999;
-        const lvl = Number(client.getData("b.admin")) || 0;
-        const auth = Number(client.getData("b.admin.auth")) || 0;
-        if (auth !== 1) return 0;
-        return lvl;
+        const rules = Array.isArray(scriptConfig.admins) ? scriptConfig.admins : [];
+        let highest = 0;
+        for (let i = 0; i < rules.length; i++) {
+            const lvl = levelFromAdminRule(client, rules[i]);
+            if (lvl > highest) highest = lvl;
+        }
+        return highest;
     } catch (_e) {
         return 0;
     }
@@ -114,14 +139,7 @@ function isTrustedAdmin(client, commandName) {
         return true;
     }
 
-    if (scriptConfig.requireTrustedAuth === true && typeof JobsRP !== "undefined" && JobsRP && JobsRP.Auth && typeof JobsRP.Auth.requireTrustedAdmin === "function") {
-        if (!JobsRP.Auth.requireTrustedAdmin(client)) {
-            return false;
-        }
-        return required <= 2;
-    }
-
-    return getVadminLevel(client) >= required;
+    return getConfiguredAdminLevel(client) >= required;
 }
 
 function bestEffortHWID(client) {

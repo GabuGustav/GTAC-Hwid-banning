@@ -8,7 +8,12 @@
   },
   "disconnectMessage": "You are banned from this server (HWID).",
   "allowConsoleBypass": true,
-  "requireTrustedAuth": true,
+  "admins": [
+    {
+      "name": "YourAdminNameHere",
+      "level": 2
+    }
+  ],
   "autoBanOnJoinCheck": true,
   "maxLogEntries": 1000
 }
